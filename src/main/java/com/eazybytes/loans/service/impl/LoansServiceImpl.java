@@ -21,6 +21,8 @@ public class LoansServiceImpl implements ILoansService {
     private LoansRepository loansRepository;
 
     /**
+     * Only one loan with the same mobile number, meaning one loan per customer, is allowed.
+     *
      * @param mobileNumber the mobile number of the customer
      */
     @Override
@@ -40,13 +42,15 @@ public class LoansServiceImpl implements ILoansService {
      */
     private Loans createNewLoan(String mobileNumber) {
         Loans newLoan = new Loans();
-        Long randomLoanNumber = new Random().nextInt(900000000) + 100000000000L;
-        newLoan.setMobileNumber(mobileNumber);
+
+        Long randomLoanNumber = 100000000000L + new Random().nextInt(900000000);
         newLoan.setLoanNumber(Long.toString(randomLoanNumber));
+        newLoan.setMobileNumber(mobileNumber);
         newLoan.setLoanType(LoansConstants.HOME_LOAN);
         newLoan.setTotalLoan(LoansConstants.NEW_LOAN_LIMIT);
         newLoan.setAmountPaid(0);
         newLoan.setOutstandingAmount(LoansConstants.NEW_LOAN_LIMIT);
+
         return newLoan;
     }
 
@@ -58,20 +62,19 @@ public class LoansServiceImpl implements ILoansService {
     public LoansDto fetchLoan(String mobileNumber) {
         Loans loan = loansRepository.findByMobileNumber(mobileNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan", "mobileNumber", mobileNumber));
-
         return LoansMapper.mapToLoansDto(loan, new LoansDto());
     }
 
     /**
-     * @param loansDto - LoansDto Object
+     * @param loanDto - LoansDto Object
      * @return
      */
     @Override
-    public boolean updateLoan(LoansDto loansDto) {
-        Loans existingLoan = loansRepository.findByLoanNumber(loansDto.getLoanNumber())
-                .orElseThrow(() -> new ResourceNotFoundException("Loan", "loanNumber", loansDto.getLoanNumber()));
-        Loans loan = LoansMapper.mapToLoans(loansDto, existingLoan);
-        loansRepository.save(loan);
+    public boolean updateLoan(LoansDto loanDto) {
+        Loans existingLoan = loansRepository.findByLoanNumber(loanDto.getLoanNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Loan", "loanNumber", loanDto.getLoanNumber()));
+        Loans updatedLoan = LoansMapper.mapToLoans(loanDto, existingLoan);
+        loansRepository.save(updatedLoan);
         return true;
     }
 
